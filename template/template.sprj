@@ -3,7 +3,7 @@
 	<pipeline>
 		<pass name="Main" type="shader" active="true" patchverts="1">
 			<shader type="vs" path="shaders\template_MainVS.hlsl" entry="main" />
-			<shader type="ps" path="shaders\template_MainPS.hlsl" entry="main" />
+			<shader type="ps" path="shaders\template_MainPS.hlsl" entry="mainShadered" />
 			<inputlayout>
 				<item value="Position" semantic="POSITION" />
 				<item value="Normal" semantic="NORMAL" />

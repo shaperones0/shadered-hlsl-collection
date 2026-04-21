@@ -28,14 +28,14 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     return float4(uvR.x,uvR.y,1.0f,1.0f);
 }
 
-float4 main(float4 uv : SV_POSITION) : SV_TARGET {
+float4 mainShadered(float4 uv : SV_POSITION) : SV_TARGET {
     return mainC(uv.xy / uResolution);
 }
 
 //For Anvil:
 //	1. comment out the cbuffer thing and shadered's main function
-//	2. uncomment lines below
-//  3. fix texture fetches
+//  2. fix texture fetches
+//	3. uncomment below
 /*
 struct PS_INPUT {
     float2 texcoord: TEXCOORD0;
@@ -51,7 +51,7 @@ float uTime;
 PS_OUTPUT main(PS_INPUT input) {
     PS_OUTPUT output;
 
-    float4 albedo = mainC(float4(input.texcoord,0.0f,0.0f));
+    float4 albedo = mainC(input.texcoord);
 
     output.color = albedo * input.color;
 
