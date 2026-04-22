@@ -51,7 +51,7 @@
 			</variables>
 			<macros />
 		</pass>
-		<pass name="WNoise" type="shader" active="true" patchverts="1">
+		<pass name="WNoise" type="shader" active="false" patchverts="1">
 			<shader type="vs" path="shaders\WNoiseVS.hlsl" entry="main" />
 			<shader type="ps" path="shaders\WNoisePS.hlsl" entry="main" />
 			<inputlayout>
@@ -73,6 +73,93 @@
 			<variables>
 				<variable type="float2" name="uResolution" system="ViewportSize" />
 				<variable type="float" name="uTime" system="Time" />
+			</variables>
+			<macros />
+		</pass>
+		<pass name="GenMeat" type="shader" active="false" patchverts="1">
+			<shader type="vs" path="shaders\GenMeatVS.hlsl" entry="main" />
+			<shader type="ps" path="shaders\GenMeatPS.hlsl" entry="main" />
+			<inputlayout>
+				<item value="Position" semantic="POSITION" />
+				<item value="Normal" semantic="NORMAL" />
+				<item value="Texcoord" semantic="TEXCOORD0" />
+			</inputlayout>
+			<rendertexture />
+			<items>
+				<item name="QuadGenMeat" type="geometry">
+					<type>ScreenQuadNDC</type>
+					<width>1</width>
+					<height>1</height>
+					<depth>1</depth>
+					<topology>TriangleList</topology>
+				</item>
+			</items>
+			<itemvalues />
+			<variables>
+				<variable type="float2" name="uResolution" system="ViewportSize" />
+				<variable type="float" name="uTime" system="Time" />
+			</variables>
+			<macros />
+		</pass>
+		<pass name="GenMeat2" type="shader" active="false" patchverts="1">
+			<shader type="vs" path="shaders\GenMeat2VS.hlsl" entry="main" />
+			<shader type="ps" path="shaders\GenMeat2PS.hlsl" entry="main" />
+			<inputlayout>
+				<item value="Position" semantic="POSITION" />
+				<item value="Normal" semantic="NORMAL" />
+				<item value="Texcoord" semantic="TEXCOORD0" />
+			</inputlayout>
+			<rendertexture />
+			<items>
+				<item name="QuadGenMeat2" type="geometry">
+					<type>ScreenQuadNDC</type>
+					<width>1</width>
+					<height>1</height>
+					<depth>1</depth>
+					<topology>TriangleList</topology>
+				</item>
+			</items>
+			<itemvalues />
+			<variables>
+				<variable type="float2" name="uResolution" system="ViewportSize" />
+				<variable type="float" name="uTime" system="Time" />
+				<variable type="float2" name="uLightPos">
+					<row>
+						<value>0.200000003</value>
+						<value>0.330000013</value>
+					</row>
+				</variable>
+			</variables>
+			<macros />
+		</pass>
+		<pass name="GenMeat3" type="shader" active="true" patchverts="1">
+			<shader type="vs" path="shaders\GenMeat3VS.hlsl" entry="main" />
+			<shader type="ps" path="shaders\GenMeat3PS.hlsl" entry="main" />
+			<inputlayout>
+				<item value="Position" semantic="POSITION" />
+				<item value="Normal" semantic="NORMAL" />
+				<item value="Texcoord" semantic="TEXCOORD0" />
+			</inputlayout>
+			<rendertexture />
+			<items>
+				<item name="QuadGenMeat3" type="geometry">
+					<type>ScreenQuadNDC</type>
+					<width>1</width>
+					<height>1</height>
+					<depth>1</depth>
+					<topology>TriangleList</topology>
+				</item>
+			</items>
+			<itemvalues />
+			<variables>
+				<variable type="float2" name="uResolution" system="ViewportSize" />
+				<variable type="float" name="uTime" system="Time" />
+				<variable type="float2" name="uLightPos">
+					<row>
+						<value>-0.180000007</value>
+						<value>0.50999999</value>
+					</row>
+				</variable>
 			</variables>
 			<macros />
 		</pass>
@@ -105,11 +192,10 @@
 	<objects />
 	<cameras />
 	<settings>
-		<entry type="property" name="SNoise" item="pipe" />
-		<entry type="file" name="WNoise" shader="vs" />
-		<entry type="file" name="WNoise" shader="ps" />
-		<entry type="file" name="SNoise" shader="vs" />
-		<entry type="file" name="SNoise" shader="ps" />
+		<entry type="property" name="GenMeat3" item="pipe" />
+		<entry type="file" name="GenMeat3" shader="vs" />
+		<entry type="file" name="GenMeat3" shader="ps" />
+		<entry type="pinned" name="uLightPos" owner="GenMeat3" />
 		<entry type="camera" fp="false">
 			<distance>4</distance>
 			<pitch>28</pitch>
