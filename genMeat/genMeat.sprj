@@ -2,8 +2,8 @@
 <project version="2">
 	<pipeline>
 		<pass name="Main" type="shader" active="true" patchverts="1">
-			<shader type="vs" path="shaders\template_MainVS.hlsl" entry="main" />
-			<shader type="ps" path="shaders\template_MainPS.hlsl" entry="mainShadered" />
+			<shader type="vs" path="shaders\MainVS.hlsl" entry="main" />
+			<shader type="ps" path="shaders\MainPS.hlsl" entry="mainShadered" />
 			<inputlayout>
 				<item value="Position" semantic="POSITION" />
 				<item value="Normal" semantic="NORMAL" />
@@ -25,7 +25,7 @@
 				<variable type="float" name="uTime" system="Time" />
 				<variable type="float2" name="uLightPos">
 					<row>
-						<value>0.330000013</value>
+						<value>0.209999993</value>
 						<value>0.319999993</value>
 					</row>
 				</variable>
@@ -37,6 +37,7 @@
 	<cameras />
 	<settings>
 		<entry type="property" name="Main" item="pipe" />
+		<entry type="file" name="Main" shader="vs" />
 		<entry type="file" name="Main" shader="ps" />
 		<entry type="pinned" name="uLightPos" owner="Main" />
 		<entry type="camera" fp="false">
