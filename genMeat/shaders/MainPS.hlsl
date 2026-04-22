@@ -37,7 +37,7 @@ float3 random3(float3 p) {
     return frac((p.xxy + p.yzz) * p.zyx);
 }
 
-float2 wnoise2(float3 p) {
+float2 wnoise2(float3 p, float3 jitter) {
     float3 n = floor( p );
     float3 f = frac( p );
 
@@ -49,7 +49,7 @@ float2 wnoise2(float3 p) {
         for (int j=-1; j<=1; j++) {
             for (int i=-1; i<=1; i++) {
                 float3 g = float3(i,j,k);
-                float3 o = random3(n + g) * WORLEY_JITTER;
+                float3 o = random3(n + g) * jitter;
                 float3 p = g + o;
                 float d = distance(p, f);
                 if (d < distF1) {
@@ -70,6 +70,14 @@ float2 wnoise2(float3 p) {
     }
 
     return float2(distF1, distF2);
+}
+
+float2 wnoise2(float3 p) {
+    return wnoise2(p,float3(1.0));
+}
+
+float wnoise(float3 p, float3 jitter) {
+    return 1.0-wnoise2(p, jitter).x;
 }
 
 float wnoise(float3 p) {
@@ -378,8 +386,10 @@ float maskVesselM(float2 uv) {
 
 float2 maskVesselL(float2 uv, float w) {
     float c;
-
-    c = 1.0-voronoi_rounded(uv*10).x;
+    float v1 = voronoi_rounded(uv*10);
+    float v2 = voronoi_border(uv*10).x;
+    float v = lerp(v1,v2,0.2);
+    c = 1.0-v;
     float amb = c;
     c = smoothstep(1-w,0.999,c);
     c = pow(c, 2);
@@ -512,6 +522,10 @@ void matBase(inout Material m, float2 uv, float t) {
         m.albedo *= 0.95 + cells * 0.1;
     }
 
+    
+    float maskHeight;
+    maskHeight = pow(vnoise(uv * 4 + 50.0),0.9);
+    
     //larj vessels
     {
         // pulsation
@@ -530,13 +544,13 @@ void matBase(inout Material m, float2 uv, float t) {
         float2 v = maskVesselL(uvw*0.1+1.0f, w+0.01);
         float vS = saturate(pow(1-pow(v.x-1,2),0.01));//???
 
-        float heightMask = pow(vnoise(uv * 4 + 50.0),0.8);
+        
 
-        float visible = smoothstep(0.2, 0.9, heightMask);
-        float above = smoothstep(0.5, 0.8, heightMask * vS);
+        float visible = smoothstep(0.2, 0.9, maskHeight);
+        float above = smoothstep(0.5, 0.8, maskHeight * vS);
         float height = vS * visible * pulse * 0.4;
         //add fine noise
-        height = height + vnoise(uvw*100) * 0.001;
+        height = height + vnoise(uvw*80) * 0.001;
         m.height -= hVesSm * smoothstep(0.0,0.08,above);
         m.height = blend_normal(height, m.height, above);
 
@@ -548,20 +562,64 @@ void matBase(inout Material m, float2 uv, float t) {
         float3 col1 = float3(0.1, 0.05, 0.05);
         float3 col2 = float3(0.8, 0.05, 0.05);
         float3 col = lerp(col1, col2, vS);
-        col = lerp(col, baseCol, heightMask/2);
+        col = lerp(col, baseCol, maskHeight/2);
 
         //ambient occlusion
         float3 colDark = lerp(m.albedo, col1, (1-v.y));
-        m.albedo = lerp(m.albedo, colDark, v.y * smoothstep(0.5,0.8,heightMask));
+        m.albedo = lerp(m.albedo, colDark, v.y * smoothstep(0.5,0.8,maskHeight));
         //m.albedo *= v.y;
 
         m.albedo = lerp(m.albedo, col, vS * visible);
 
-
-
         m.roughness -= v * 0.3;
-        //m.albedo=heightMask;
+        //m.albedo=maskHeight;
         //m.albedo=vS;
+    }
+    
+    //holes.
+    {
+        float maskHolesS = smoothstep(0,0.1,vnoise(uv * 3.0 + 35.0));
+        float maskHolesL = smoothstep(0,1,vnoise(uv * 3.0 + 30.0));
+        //only allow holes where no tubes
+        maskHolesS -= maskHeight * 1.5;
+        maskHolesL -= maskHeight * 1.5;
+        //allow small holes where no big holes
+        maskHolesL = saturate(maskHolesL);
+        maskHolesS -= maskHolesL * 1.5;
+        maskHolesS = saturate(maskHolesS);
+        
+        float vHolesL = wnoise(float3(uv * 2.0, 20.0f));
+        vHolesL *= maskHolesL;
+        vHolesL = smoothstep(0.0, 0.3, vHolesL);
+        float vHolesS = wnoise(float3(uv * 50.0, 30.0f), float3(0.8,0.8,0.0));
+        vHolesS *= maskHolesS;
+        vHolesS = pow(smoothstep(0.0,0.75,vHolesS), 0.15);
+        
+        float hHolesL = smoothstep(0.7, 0.95, vHolesL);
+        float bHolesL = smoothstep(0.99,0.991, hHolesL);
+        //m.height -= bHolesL * 0.6;
+        m.height = lerp(m.height, -0.6, bHolesL);
+        float rim = smoothstep(0.5,0.99,hHolesL);
+        rim = pow(rim, 20*vnoise(uv * 400.0)+1);
+        m.height += rim * 0.2;
+        float3 col1 = float3(0.1, 0.05, 0.05);
+        m.albedo = lerp(m.albedo, col1, bHolesL * 0.8);
+        
+        float hHolesS = smoothstep(0.7, 0.95, vHolesS);
+        float bHolesS = smoothstep(0.99,0.991, hHolesS);
+        //m.height -= bHolesL * 0.6;
+        m.height = lerp(m.height, -0.6, bHolesS);
+        rim = smoothstep(0.5,0.99,hHolesS);
+        rim = pow(rim, 20*vnoise(uv * 400.0 + 10.0)+1);
+        m.height += rim * 0.2;
+        m.albedo = lerp(m.albedo, col1, bHolesS * 0.8);
+        
+        //vHolesS = step(0.99, vHolesS);
+        //m.albedo = float3(bHolesL, vHolesS, 0.0f);
+        //m.albedo = (vHolesL + vHolesS) / 2
+        //m.albedo = bHolesS;
+        //m.albedo = float3(maskHeight, maskHolesL, maskHolesS);
+        //m.albedo=rim;
     }
 }
 
@@ -634,6 +692,7 @@ float3 shade(Material m, float2 uv) {
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //uvs are already normalized
     Material m;
+    uv += warp(uv+0.0f, uTime * 2.0) * 0.05;
     matBase(m, uv, uTime);
     matSmallVessels(m, uv);
     matSkin(m, uv);

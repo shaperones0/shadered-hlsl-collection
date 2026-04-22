@@ -25,8 +25,8 @@
 				<variable type="float" name="uTime" system="Time" />
 				<variable type="float2" name="uLightPos">
 					<row>
-						<value>0.209999993</value>
-						<value>0.319999993</value>
+						<value>0.879999995</value>
+						<value>0.280000001</value>
 					</row>
 				</variable>
 			</variables>
