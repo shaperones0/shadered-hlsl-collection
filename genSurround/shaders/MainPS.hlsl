@@ -184,75 +184,40 @@ float fnoisav(float3 v) {
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //base simplex noise (5 octave, low frequency)
     float2 flow = float2(0.05, 0.03) * uTime;
-    float2 warp = tex(0, uv * 2.0).rg - 0.5;
-    float2 uvw = uv + warp * 0.15;
+    float2 warp = tex(0, uv*2.0 + flow).rg - 0.5;
+
     //uvw *= 0.5;
     
-    // Layered FBM-style sampling
-    float nois;
-    //nois = tex(0, uvw * 0.5).r;
-    //nois =
-    //    tex(0, uvw * 4.0).r * 0.5 +
-    //    tex(0, uvw * 8.0).r * 0.25 +
-    //    tex(0, uvw * 16.0).r * 0.125;
-    warp = tex(0, uv*2.0 + flow).rg - 0.5;
-    //nois = snoisel(float3(uv*10,uTime*0.1));
-    nois = snoisel(float3(uv*10 + warp*0.1,1.0f));
-    nois = tex(0, uv*0.8 + warp*0.2/20).b;
-    float n2=nois;
+    //base snoise
+    float nois = tex(0, uv*0.8 + warp*0.2/20).b;
     
-    //fold 3
+    //ridges
     float ns=1-fold(saturate(nois),3);
 
     //make the center dark
     float2 d = uv - 0.5f;
     float dist = length(d);
-    //control darkness radius
-    //float p;
-    //p = sin(uTime * 0.5);
-    //p = smoothstep(-1,1,p);
-    //p = lerp(0.2,4.2,p);
-    //p = sqrt(p);
-    //1d radial simplex noise to make the border less uniform
+
+    //1d radial simplex noise to jostle the border
     float2 d2 = float2(
         d.x * 0.707 - d.y * 0.707,
         d.x * 0.707 + d.y * 0.707
     );
-    
     float angle = sign(d2.y) * (1 - d2.x / (abs(d2.x) + abs(d2.y) + 1e-5));
-    //float angle = sign(d.y) * (1 - d.x / (abs(d.x) + abs(d.y) + 1e-5));
-    
-    //float angle1 = sign(d.y) * (1 - d.x / (abs(d.x) + abs(d.y) + 1e-5));
-    //float angle2 = sign(d.x) * (1 - d.y / (abs(d.x) + abs(d.y) + 1e-5));
-    //float w = smoothstep(-0.2, 0.2, d.x);
-    //float angle = lerp(angle1, angle2, w);
-    float2 dir = normalize(d + 1e-5);
     float n1;
-    //n1 = snoisev(float3(atan2(uv.y-0.5,uv.x-0.5)*5,dist,uTime/5));
-    //warp = tex(0, uvw).rg - 0.5;
-    nois = 
-        pow(tex(0, float2(angle * 0.125, dist * 1.0) + flow).r, 1) * 0.5 +
-        pow(tex(0, float2(angle * 0.25, dist * 2.0) - flow * 1.3 * 2.0).r, 1) * 0.25 +
-        pow(tex(0, float2(angle * 0.5, dist * 4.0) + flow * 0.7 * 4.0).r, 1) * 0.125;
-    nois = fnoisav(float3(angle * 5 * 0.1, 1.0, uTime * 0.2))+0.13;
-    nois=sharpen(nois,6);
-    //nois = fnoise(float3(angle * 5, dist, uTime * 0.2));
-    n1 = snoisev(float3(angle * 5, dist, uTime * 0.2));
-    //n1 = snoisev(float3(dir * 5, di uTime * 0.2));
-    //n1 = pow(tex(0, float2(angle * 0.5, dist * 2.0) + flow).r,0.5);
-    //n1 = pow(nois,0.5);
-    n1=nois;
+    n1 = sharpen(fnoisav(float3(angle * 5 * 0.1, 1.0, uTime * 0.2))+0.13, 6);
+    n1 = tex(0, float2(angle * 5 * 0.1, uTime * 0.02));
+    n1 = sharpen(n1+0.13,6);
+    //n1 = sharpen(fnoisav(float3(angle * 5 * 0.1, 1.0, uTime * 0.2))+0.13, 6);
+    
     //apply the dark center
-    ns=saturate(ns-(1.0-dist*uP*(n1*0.2+1.2)));
+    float dark = (1.0 - dist * uP * (n1 * 0.1 + 1));
+    ns=saturate(ns-dark);
+    //ns=saturate(ns-(1.0-dist*uP*(n1*0.2+1.2)));
 
     //make uniformly darker spots
-    //ns=round(ns);
     ns=smoothstep(0.5,1,ns);
-    //ns=n1;
-    //ns=snoisev(float3(uv, uTime*0.2));
-    //ns=fnoisev(float3(uv, uTime*0.2));
-    //ns=n2;
-    //ns=warp;
+    //ns=dark;
     return float4(ns,ns,ns,1.0f);
 }
 
