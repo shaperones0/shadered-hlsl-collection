@@ -3,13 +3,20 @@ cbuffer vars : register(b0) {
     float uTime;
 };
 
-//Texture2D tex : register(t0);
-//SamplerState smp : register(s0);
+Texture2D texN : register(t0);
+SamplerState smpN : register(s0);
+float uP;
 
 float3 mod289(in float3 x) { return x - floor(x * (1. / 289.)) * 289.; }
 float4 mod289(in float4 x) { return x - floor(x * (1. / 289.)) * 289.; }
 float4 permute(in float4 x) { return mod289(((x * 34.0) + 1.0) * x); }
 float4 taylorInvSqrt(in float4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float4 tex(const int i, float2 uv) {
+    if (i==0) {
+        return texN.Sample(smpN,uv);
+    }
+}
 
 float snoise(float3 v) {
     const float2 C = float2(1.0 / 6.0, 1.0 / 3.0);
@@ -116,9 +123,82 @@ float fold(float val, int n) {
     return 1 - abs(1 - 2*frac(val * n));
 }
 
+float fnoise(float3 uv) {
+    uv *= 0.5;
+    float2 uv2 = uv.xy + tex(0, uv.xy + uv.z * 0.5).rb;
+    float n0 = tex(0, uv.xy).r;
+    float n1 = tex(0, uv.xy).b;
+    //float n2 = tex(0, uv.xy + uv.z * float2(0.02,0.03));
+    float n = lerp(n0, n1, uv.z*10);
+    n = smoothstep(-1,1,sin(uv.z*(n1-n0)*100.0)); 
+    //n = sin(n);
+    return n;//lerp(n0, n1, fold(uv.z,1));
+}
+
+float fnoisev(float3 v) {
+    float amplitude = 0.5;
+    float frequency = 1;
+    float output = 0.0;
+    static const int octaves=1;
+    for (int i = 0; i < octaves; i++) {
+        output += (2*fnoise(v * frequency)+1) * amplitude;
+        amplitude *= 0.5;
+        frequency *= 2.0;
+    }
+
+    return saturate(output);
+}
+
+float sharpenFast(float x, float k) {
+    x = saturate(x);
+    float a = x * x;
+    float b = (1 - x) * (1 - x);
+    return a / (a + b + 1e-5) * k + x * (1 - k);
+}
+
+float sharpen(float x, float power) {
+    x = saturate(x);
+    return pow(x, power) / (pow(x, power) + pow(1 - x, power));
+}
+
+float fnoisea(float3 v) {
+    float2 flow = float2(0.05, 0.03);
+    return tex(0, v.xy + flow * v.z).r;
+}
+
+float fnoisav(float3 v) {
+    float2 flow = float2(0.05, 0.03);
+    float amplitude = 0.5;
+    float frequency = 1;
+    float output = 0.0;
+    static const int octaves=3;
+    for (int i = 0; i < octaves; i++) {
+        output += fnoisea(v * frequency) * amplitude;
+        amplitude *= 0.5;
+        frequency *= 2.0;
+    }
+
+    return saturate(output);
+}
+
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //base simplex noise (5 octave, low frequency)
-    float nois = snoisel(float3(uv*10,uTime*0.1));
+    float2 flow = float2(0.05, 0.03) * uTime;
+    float2 warp = tex(0, uv * 2.0).rg - 0.5;
+    float2 uvw = uv + warp * 0.15;
+    //uvw *= 0.5;
+    
+    // Layered FBM-style sampling
+    float nois;
+    //nois = tex(0, uvw * 0.5).r;
+    //nois =
+    //    tex(0, uvw * 4.0).r * 0.5 +
+    //    tex(0, uvw * 8.0).r * 0.25 +
+    //    tex(0, uvw * 16.0).r * 0.125;
+    warp = tex(0, uv*2.0 + flow).rg - 0.5;
+    //nois = snoisel(float3(uv*10,uTime*0.1));
+    nois = snoisel(float3(uv*10 + warp*0.1,1.0f));
+    
     //fold 3
     float ns=1-fold(saturate(nois),3);
 
@@ -126,22 +206,50 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     float2 d = uv - 0.5f;
     float dist = length(d);
     //control darkness radius
-    float p;
-    p = sin(uTime * 0.5);
-    p = smoothstep(-1,1,p);
-    p = lerp(0.2,4.2,p);
-    p = sqrt(p);
+    //float p;
+    //p = sin(uTime * 0.5);
+    //p = smoothstep(-1,1,p);
+    //p = lerp(0.2,4.2,p);
+    //p = sqrt(p);
     //1d radial simplex noise to make the border less uniform
-    float angle = sign(d.y) * (1 - d.x / (abs(d.x) + abs(d.y) + 1e-5));
+    float2 d2 = float2(
+        d.x * 0.707 - d.y * 0.707,
+        d.x * 0.707 + d.y * 0.707
+    );
+    
+    float angle = sign(d2.y) * (1 - d2.x / (abs(d2.x) + abs(d2.y) + 1e-5));
+    //float angle = sign(d.y) * (1 - d.x / (abs(d.x) + abs(d.y) + 1e-5));
+    
+    //float angle1 = sign(d.y) * (1 - d.x / (abs(d.x) + abs(d.y) + 1e-5));
+    //float angle2 = sign(d.x) * (1 - d.y / (abs(d.x) + abs(d.y) + 1e-5));
+    //float w = smoothstep(-0.2, 0.2, d.x);
+    //float angle = lerp(angle1, angle2, w);
+    float2 dir = normalize(d + 1e-5);
     float n1;
     //n1 = snoisev(float3(atan2(uv.y-0.5,uv.x-0.5)*5,dist,uTime/5));
+    //warp = tex(0, uvw).rg - 0.5;
+    nois = 
+        pow(tex(0, float2(angle * 0.125, dist * 1.0) + flow).r, 1) * 0.5 +
+        pow(tex(0, float2(angle * 0.25, dist * 2.0) - flow * 1.3 * 2.0).r, 1) * 0.25 +
+        pow(tex(0, float2(angle * 0.5, dist * 4.0) + flow * 0.7 * 4.0).r, 1) * 0.125;
+    nois = fnoisav(float3(angle * 5 * 0.1, 1.0, uTime * 0.2))+0.13;
+    nois=sharpen(nois,6);
+    //nois = fnoise(float3(angle * 5, dist, uTime * 0.2));
     n1 = snoisev(float3(angle * 5, dist, uTime * 0.2));
-
+    //n1 = snoisev(float3(dir * 5, di uTime * 0.2));
+    //n1 = pow(tex(0, float2(angle * 0.5, dist * 2.0) + flow).r,0.5);
+    //n1 = pow(nois,0.5);
+    n1=nois;
     //apply the dark center
-    ns=saturate(ns-(1.0-dist*p*(n1*0.2+1.2)));
+    ns=saturate(ns-(1.0-dist*uP*(n1*0.2+1.2)));
 
     //make uniformly darker spots
+    //ns=round(ns);
     ns=smoothstep(0.5,1,ns);
+    //ns=n1;
+    //ns=snoisev(float3(uv, uTime*0.2));
+    //ns=fnoisev(float3(uv, uTime*0.2));
+    
     return float4(ns,ns,ns,1.0f);
 }
 
