@@ -95,7 +95,7 @@ float snoisel(float3 v) {
         frequency *= 2.1;
     }
 
-    return clamp(output, 0.0, 1.0);
+    return saturate(output);
 }
 
 float snoisev(float3 v) {
@@ -109,29 +109,33 @@ float snoisev(float3 v) {
         frequency *= 2.0;
     }
 
-    return output;//clamp(output, 0.0, 1.0);
+    return saturate(output);
 }
 
 float fold(float val, int n) {
-    int seg = floor(val*n);
-    float segmn = (float)seg / n;
-    float segmx = (float)(seg+1) / n;
-    val = (val-segmn) / (segmx-segmn);
-    return 1 - abs(1 - 2*val);
+    return 1 - abs(1 - 2*frac(val * n));
 }
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //base simplex noise (5 octave, low frequency)
-    float nois = snoisel(float3(uv.x*10,uv.y*10,uTime/10));
+    float nois = snoisel(float3(uv*10,uTime*0.1));
     //fold 3
     float ns=1-fold(saturate(nois),3);
 
     //make the center dark
-    float dist = sqrt(pow(uv.x - 0.5f,2)+pow(uv.y - 0.5f,2));
+    float2 d = uv - 0.5f;
+    float dist = length(d);
     //control darkness radius
-    float p = pow(2 * sin(uTime*0.5) + 2.2, 0.5);
+    float p;
+    p = sin(uTime * 0.5);
+    p = smoothstep(-1,1,p);
+    p = lerp(0.2,4.2,p);
+    p = sqrt(p);
     //1d radial simplex noise to make the border less uniform
-    float n1 = snoisev(float3(atan2(uv.y-0.5,uv.x-0.5)*5,dist,uTime/5));
+    float angle = sign(d.y) * (1 - d.x / (abs(d.x) + abs(d.y) + 1e-5));
+    float n1;
+    //n1 = snoisev(float3(atan2(uv.y-0.5,uv.x-0.5)*5,dist,uTime/5));
+    n1 = snoisev(float3(angle * 5, dist, uTime * 0.2));
 
     //apply the dark center
     ns=saturate(ns-(1.0-dist*p*(n1*0.2+1.2)));
