@@ -55,7 +55,7 @@
 				<variable type="float" name="uTime" system="Time" />
 				<variable type="float" name="uP">
 					<row>
-						<value>1.54999995</value>
+						<value>1.95000005</value>
 					</row>
 				</variable>
 			</variables>
@@ -69,10 +69,9 @@
 	</objects>
 	<cameras />
 	<settings>
-		<entry type="property" name="Noise" item="pipe" />
-		<entry type="file" name="Noise" shader="ps" />
+		<entry type="property" name="Main" item="pipe" />
+		<entry type="file" name="Main" shader="vs" />
 		<entry type="file" name="Main" shader="ps" />
-		<entry type="pinned" name="uSeed" owner="Noise" />
 		<entry type="pinned" name="uP" owner="Main" />
 		<entry type="camera" fp="false">
 			<distance>4</distance>
