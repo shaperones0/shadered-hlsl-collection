@@ -198,6 +198,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     warp = tex(0, uv*2.0 + flow).rg - 0.5;
     //nois = snoisel(float3(uv*10,uTime*0.1));
     nois = snoisel(float3(uv*10 + warp*0.1,1.0f));
+    nois = tex(0, uv*0.8 + warp*0.2/20).b;
     float n2=nois;
     
     //fold 3

@@ -25,7 +25,7 @@
 				<variable type="float" name="uTime" system="Time" />
 				<variable type="float" name="uSeed">
 					<row>
-						<value>0</value>
+						<value>0.150000006</value>
 					</row>
 				</variable>
 			</variables>
@@ -55,7 +55,7 @@
 				<variable type="float" name="uTime" system="Time" />
 				<variable type="float" name="uP">
 					<row>
-						<value>1.42999995</value>
+						<value>1.65999997</value>
 					</row>
 				</variable>
 			</variables>
