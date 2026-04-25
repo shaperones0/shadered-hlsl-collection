@@ -19,6 +19,14 @@ float hash(float2 p) {
     return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
 }
 
+#define RANDOM_SCALE float4(443.897, 441.423, 0.0973, 0.1099)
+float2 hash2(float p) {
+    float3 p3 = frac(float3(p, p, p) * RANDOM_SCALE.xyz);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return frac((p3.xx + p3.yz) * p3.zy);
+}
+
+
 float vnoise(float2 p) {
     float2 i = floor(p);
     float2 f = frac(p);
@@ -33,6 +41,7 @@ float vnoise(float2 p) {
     return lerp(lerp(a,b,u.x), lerp(c,d,u.x), u.y);
 }
 
+
 float fold(float val, int n) {
     return 1 - abs(1 - 2*frac(val * n));
 }
@@ -45,6 +54,44 @@ float sharpen(float x, float power) {
 float3 sharpen(float3 x, float power) {
     x = saturate(x);
     return pow(x, power) / (pow(x, power) + pow(1 - x, power));
+}
+
+float fnoise(float3 uv) {
+    float2 off0 = hash(floor(uv.z)); 
+    float2 off1 = hash(floor(uv.z) + 1); 
+    float base = lerp( 
+        tex(0, uv.xy + off0).r, 
+        tex(0, uv.xy + off1).r, 
+        frac(uv.z) 
+    ); 
+    return base;
+}
+
+float fnoisev4(float3 uv) {
+    float z = uv.z;
+    float iz = floor(z);
+    float f = frac(z);
+    
+    float w0 = -0.5*f + f*f - 0.5*f*f*f;
+    float w1 = 1.0 - 2.5*f*f + 1.5*f*f*f;
+    float w2 = 0.5*f + 2.0*f*f - 1.5*f*f*f;
+    float w3 = -0.5*f*f + 0.5*f*f*f;
+    
+    float n0 = tex(0, uv.xy + hash2(iz - 1)).r;
+    float n1 = tex(0, uv.xy + hash2(iz)).r;
+    float n2 = tex(0, uv.xy + hash2(iz + 1)).r;
+    float n3 = tex(0, uv.xy + hash2(iz + 2)).r;
+    
+    float result = n0*w0 + n1*w1 + n2*w2 + n3*w3;
+    
+    // contrast compensation
+    result = sharpen(result, lerp(1.3, 1, abs(0.5 - f)));
+    
+    return result;
+}
+
+float fnoisex(float3 uv) {
+    return lerp(fnoisev4(uv), fnoisev4(uv + 1.5), 0.5);
 }
 
 float3 pal4(float f, float3 c0, float3 c1, float3 c2, float3 c3) {
@@ -104,16 +151,17 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         
         //inner lighter colors
         float2 innerFlow = float2(0.05, 0.03) * uTime;
-        innerFlow *= pow(ns,5);
+        innerFlow *= pow(ns,10);
         float2 innerWarp = tex(0, uv * 5.0 + flow*5).rg - 0.5;
         innerFlow += innerWarp;
-        innerFlow *= pow(ns,5);
+        innerFlow *= pow(ns,10);
         innerWarp = tex(0, uv * 5.0 + innerFlow * float2(-0.6, 0.8)).rg - 0.5;
         //shall only warp when inner
         innerWarp *= pow(ns,5);
         float innerWarpN = tex(0, uv * 1.0 - flow * float2(0.8, -0.9)).r;
         innerWarpN = saturate(innerWarpN*1.5 - 0.5);
         innerWarpN = lerp(0.05, 0.8, innerWarpN);
+        innerWarpN = fnoisex(float3(uv, uTime));
         innerWarp *= innerWarpN;
         float2 innerUvw = uv + innerWarp * 0.5;
         
@@ -140,7 +188,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         float3 col = lerp(colOuter, colInner, pow(ns,2)) * maskMain;
         col = sharpen(col, 1.5);
         //col=colInner;
-        //col=float3(innerWarpN);
+        col=float3(innerWarpN);
         //col=float3(innerWarp,0.0);
         
         matAlbedo = col;// * maskMain;

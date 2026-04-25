@@ -61,7 +61,7 @@
 			</variables>
 			<macros />
 		</pass>
-		<pass name="Noise" type="shader" active="false" patchverts="1">
+		<pass name="Noise" type="shader" active="true" patchverts="1">
 			<shader type="vs" path="shaders\NoiseVS.hlsl" entry="main" />
 			<shader type="ps" path="shaders\NoisePS.hlsl" entry="mainShadered" />
 			<inputlayout>
@@ -103,9 +103,8 @@
 	<cameras />
 	<settings>
 		<entry type="property" name="Main" item="pipe" />
+		<entry type="file" name="Main" shader="vs" />
 		<entry type="file" name="Main" shader="ps" />
-		<entry type="file" name="Noise" shader="ps" />
-		<entry type="file" name="Outline" shader="ps" />
 		<entry type="pinned" name="uP2" owner="Outline" />
 		<entry type="pinned" name="uP" owner="Main" />
 		<entry type="camera" fp="false">
