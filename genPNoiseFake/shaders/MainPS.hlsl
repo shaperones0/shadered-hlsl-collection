@@ -13,7 +13,7 @@ float4 tex(const int i, float2 uv) {
     }
 }
 
-float lerp2(float fromA, float fromB, float toA, float toB, double value) {
+float lerp2(float fromA, float fromB, float toA, float toB, float value) {
     return ((value-fromA)/(fromB-fromA))*(toB-toA)+toA;
 }
 
