@@ -8,10 +8,10 @@ cbuffer vars : register(b0) {
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //uvs are already normalized
-    float c = (sin(uTime) + 1) * 0.15;
-    return float4(c,c,c,1.0f);
+    float c = (sin(uTime) + 1) * 0.55;
+    return float4(c*uv.x,c*uv.y,c,1.0f);
 }
 
-float4 mainShadered(float4 uv : SV_POSITION) : SV_TARGET {
+float4 main(float4 uv : SV_POSITION) : SV_TARGET {
     return mainC(uv.xy / uResolution);
 }
