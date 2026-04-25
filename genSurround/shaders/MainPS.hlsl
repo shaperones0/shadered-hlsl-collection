@@ -56,40 +56,6 @@ float3 sharpen(float3 x, float power) {
     return pow(x, power) / (pow(x, power) + pow(1 - x, power));
 }
 
-float fnoise(float3 uv) {
-    float2 off0 = hash(floor(uv.z)); 
-    float2 off1 = hash(floor(uv.z) + 1); 
-    float base = lerp( 
-        tex(0, uv.xy + off0).r, 
-        tex(0, uv.xy + off1).r, 
-        frac(uv.z) 
-    ); 
-    return base;
-}
-
-float fnoisev4(float3 uv) {
-    float z = uv.z;
-    float iz = floor(z);
-    float f = frac(z);
-    
-    float w0 = -0.5*f + f*f - 0.5*f*f*f;
-    float w1 = 1.0 - 2.5*f*f + 1.5*f*f*f;
-    float w2 = 0.5*f + 2.0*f*f - 1.5*f*f*f;
-    float w3 = -0.5*f*f + 0.5*f*f*f;
-    
-    float n0 = tex(0, uv.xy + hash2(iz - 1)).r;
-    float n1 = tex(0, uv.xy + hash2(iz)).r;
-    float n2 = tex(0, uv.xy + hash2(iz + 1)).r;
-    float n3 = tex(0, uv.xy + hash2(iz + 2)).r;
-    
-    float result = n0*w0 + n1*w1 + n2*w2 + n3*w3;
-    
-    // contrast compensation
-    result = sharpen(result, lerp(1.3, 1, abs(0.5 - f)));
-    
-    return result;
-}
-
 float fnoisev3(float3 uv) {
     float z = uv.z;
     float iz = floor(z);
@@ -108,7 +74,7 @@ float fnoisev3(float3 uv) {
     float n2 = tex(0, base + hash2(iz + 1)).r;
 
     float result = n0*w0 + n1*w1 + n2*w2;
-    
+
     return result;
 }
 
@@ -121,7 +87,7 @@ float fnoisex(float3 uv) {
     n *= 1.3;
     n = n / (1.0 + abs(n));
     n = n * 0.5 + 0.5;
-    
+
     return sharpen(n,3);
     //return lerp(fnoisev3(uv), fnoisev3(uv + 1.5), 0.5);
 }
@@ -143,17 +109,17 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
 
     float2 flow = float2(0.05, 0.03) * uTime;
     float2 warp = tex(0, uv*2.0 + flow).rg - 0.5;
-    
+
     //base snoise
     float ns;
     {
         ns = tex(0, uv*0.8 + warp*0.2/20).b;
         ns = 1-fold(saturate(ns),3);
-    
+
         //make the center dark
         float2 d = uv - 0.5f;
         float dist = length(d);
-    
+
         //1d radial noise to jostle the border
         float2 d2 = float2(
             d.x * 0.707 - d.y * 0.707,
@@ -163,40 +129,28 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         float n1;
         n1 = tex(0, float2(angle * 1 * 0.1, uTime * 0.002)).b;
         n1 = sharpen(n1+0.13,6);
-        
+
         //apply the dark center
         float dark = (1.0 - dist * uP * (n1 * lerp(0,0.2,saturate(uP-1)) + 1));
         ns=saturate(ns-dark);
-    
+
         //make uniformly darker spots
         ns=smoothstep(0.5,1,ns);
         //ns=round(ns);
     }
-    
+
     //stylization
     float maskMain;
     {
         maskMain = step(1e-5,ns);
-        
+
         //outer color dark
         float3 colOuter = float3(0.25, 0.05, 0.05);
-        
+
         //inner lighter colors
-        float2 innerFlow = float2(0.05, 0.03) * uTime;
-        innerFlow *= pow(ns,10);
-        float2 innerWarp = tex(0, uv * 5.0 + flow*5).rg - 0.5;
-        innerFlow += innerWarp;
-        innerFlow *= pow(ns,10);
-        innerWarp = tex(0, uv * 5.0 + innerFlow * float2(-0.6, 0.8)).rg - 0.5;
-        //shall only warp when inner
-        innerWarp *= pow(ns,5);
-        float innerWarpN = fnoisex(float3(uv, uTime));//tex(0, uv * 1.0 - flow * float2(0.8, -0.9)).r;
-        innerWarpN = saturate(innerWarpN*1.5 - 0.5);
-        innerWarpN = lerp(0.05, 0.8, innerWarpN);
-        innerWarp *= innerWarpN;
-        innerWarpN = fnoisex(float3(uv*5, uTime));
+        float innerWarpN = fnoisex(float3(uv*5, uTime));
         float2 innerUvw = uv + innerWarpN * 0.5;
-        
+
         float n1 = vnoise(innerUvw * 2.0 * 5);
         float n2 = vnoise(-innerUvw * 3.0 * 5);
         float3 meatH[4] = {
@@ -205,7 +159,6 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
             float3(161.0,   6.0,   6.0) / C255,
             float3(255.0, 109.0, 109.0) / C255
         };
-
         float3 meatS[4] = {
             float3(161.0,  51.0,  73.0) / C255,
             float3(187.0,  56.0,  79.0) / C255,
@@ -214,18 +167,14 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         };
         float3 colMeatH = pal4(n1,meatH[0],meatH[1],meatH[2],meatH[3]);
         float3 colMeatS = pal4(n1,meatS[0],meatS[1],meatS[2],meatS[3]);
-        n2=pow(n2,0.8);
-        float3 colInner = lerp(colMeatH, colMeatS, n2);
-        
+        float3 colInner = lerp(colMeatH, colMeatS, pow(n2,0.8));
+
         float3 col = lerp(colOuter, colInner, pow(ns,2)) * maskMain;
-        col = sharpen(col, 1.5);
-        //col=colInner;
-        //col=float3(innerWarpN);
-        //col=float3(innerWarp,0.0);
-        
-        matAlbedo = col;// * maskMain;
+        //col = sharpen(col, 1.5);
+
+        matAlbedo = col;
     }
-    
+
     return float4(matAlbedo,1.0f);
 }
 
