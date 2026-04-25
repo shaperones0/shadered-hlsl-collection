@@ -522,10 +522,10 @@ void matBase(inout Material m, float2 uv, float t) {
         m.albedo *= 0.95 + cells * 0.1;
     }
 
-    
+
     float maskHeight;
     maskHeight = pow(vnoise(uv * 4 + 50.0),0.9);
-    
+
     //larj vessels
     {
         // pulsation
@@ -543,8 +543,6 @@ void matBase(inout Material m, float2 uv, float t) {
         w = lerp(0.02f, 0.021f, pulseWarp);
         float2 v = maskVesselL(uvw*0.1+1.0f, w+0.01);
         float vS = saturate(pow(1-pow(v.x-1,2),0.01));//???
-
-        
 
         float visible = smoothstep(0.2, 0.9, maskHeight);
         float above = smoothstep(0.5, 0.8, maskHeight * vS);
@@ -575,7 +573,7 @@ void matBase(inout Material m, float2 uv, float t) {
         //m.albedo=maskHeight;
         //m.albedo=vS;
     }
-    
+
     //holes.
     {
         float maskHolesS = smoothstep(0,0.1,vnoise(uv * 3.0 + 35.0));
@@ -587,14 +585,14 @@ void matBase(inout Material m, float2 uv, float t) {
         maskHolesL = saturate(maskHolesL);
         maskHolesS -= maskHolesL * 1.5;
         maskHolesS = saturate(maskHolesS);
-        
+
         float vHolesL = wnoise(float3(uv * 2.0, 20.0f));
         vHolesL *= maskHolesL;
         vHolesL = smoothstep(0.0, 0.3, vHolesL);
         float vHolesS = wnoise(float3(uv * 50.0, 30.0f), float3(0.8,0.8,0.0));
         vHolesS *= maskHolesS;
         vHolesS = pow(smoothstep(0.0,0.75,vHolesS), 0.15);
-        
+
         float hHolesL = smoothstep(0.7, 0.95, vHolesL);
         float bHolesL = smoothstep(0.99,0.991, hHolesL);
         //m.height -= bHolesL * 0.6;
@@ -604,7 +602,7 @@ void matBase(inout Material m, float2 uv, float t) {
         m.height += rim * 0.2;
         float3 col1 = float3(0.1, 0.05, 0.05);
         m.albedo = lerp(m.albedo, col1, bHolesL * 0.8);
-        
+
         float hHolesS = smoothstep(0.7, 0.95, vHolesS);
         float bHolesS = smoothstep(0.99,0.991, hHolesS);
         //m.height -= bHolesL * 0.6;
@@ -613,7 +611,7 @@ void matBase(inout Material m, float2 uv, float t) {
         rim = pow(rim, 20*vnoise(uv * 400.0 + 10.0)+1);
         m.height += rim * 0.2;
         m.albedo = lerp(m.albedo, col1, bHolesS * 0.8);
-        
+
         //vHolesS = step(0.99, vHolesS);
         //m.albedo = float3(bHolesL, vHolesS, 0.0f);
         //m.albedo = (vHolesL + vHolesS) / 2

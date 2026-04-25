@@ -144,7 +144,7 @@ float psrdnoisel2D(float2 uv, float2 period) {
     float frequency = 1.0;//0.5;
     float output = 0.0;
     float2 u;
-    
+
     for (int i = 0; i < 5; i++) {
         output += 0.5*(1+psrdnoise(uv*frequency, period*frequency, 0.0, u))*amplitude;
         amplitude*=0.5; frequency*=2;
@@ -168,7 +168,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     float r = fbm(p, period);
     float g = fbm(p * 2.0 + uSeed, period * 2.0);
     float b = sharpen(psrdnoisel2D(p, period) - 0.02, 2);
-    
+
     return float4(r,g,b, 1);
 }
 

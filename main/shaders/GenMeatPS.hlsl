@@ -166,7 +166,7 @@ float genVeins(float2 uv) {
     np=fold(np,1);
     np=pow(np,5);
     np=smoothstep(0.6,0.9,np);
-    return round(np); 
+    return round(np);
 }
 
 float genVeins2(float2 uv) {
@@ -179,13 +179,13 @@ float genVeins2(float2 uv) {
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //uvs are already normalized
-    
+
     //wapr uv
     float p1 = pnoise(float3(uv*9,uTime*0.3), float3(10.0) );
     float p2 = pnoise(float3(uv*7,uTime*0.2), float3(10.0) );
     float2 warp = float2(p1,p2);
     float2 uvw = uv + warp * 0.15;
-    
+
     float c=genBack(uvw);
     c=c+genVeins(uvw)*0.3*c;
     //c=c+genVeins2(lerp(uv,uvw,0.5))*0.3*c;

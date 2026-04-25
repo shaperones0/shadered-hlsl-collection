@@ -220,7 +220,7 @@ float fold(float val, float n) {
 
 float3 computeSSS(float sss) {
     float3 sssColor = float3(0.8, 0.2, 0.15);
-    
+
     return sss * sssColor * 0.5;
 }
 
@@ -230,7 +230,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
 
     // get data
     MeatData d = MeatData_create(uv * 2.5, uTime);
-    
+
     // features
     float veins = genVeins(uv * 2.5, uTime);
     float bigVessels = genBigVessels(uv * 2.5, uTime);
@@ -239,11 +239,11 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
 
     // material
     float3 col = MeatData_albedo(d);
-    
+
     // integrate structures
     col = lerp(col, float3(0.2,0.0,0.05), veins);
     col = lerp(col, float3(0.4,0.0,0.05), bigVessels);
-    
+
     // holes
     col *= 1.0 - pores * 0.3;
     col = lerp(col, float3(0.05,0.0,0.0), mouths);
