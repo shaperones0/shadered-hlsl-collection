@@ -55,7 +55,7 @@
 				<variable type="float" name="uTime" system="Time" />
 				<variable type="float" name="uP">
 					<row>
-						<value>1.72000003</value>
+						<value>2</value>
 					</row>
 				</variable>
 			</variables>

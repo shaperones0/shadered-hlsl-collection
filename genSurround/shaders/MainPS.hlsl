@@ -90,8 +90,40 @@ float fnoisev4(float3 uv) {
     return result;
 }
 
+float fnoisev3(float3 uv) {
+    float z = uv.z;
+    float iz = floor(z);
+    float f = frac(z);
+    f = sharpen(f, 1.2);
+
+    // 3-tap weights
+    float w0 = 0.5 * (1.0 - f) * (1.0 - f);
+    float w1 = 0.75 - (f - 0.5)*(f - 0.5);
+    float w2 = 0.5 * f * f;
+
+    float2 base = uv.xy;
+
+    float n0 = tex(0, base + hash2(iz - 1)).r;
+    float n1 = tex(0, base + hash2(iz)).r;
+    float n2 = tex(0, base + hash2(iz + 1)).r;
+
+    float result = n0*w0 + n1*w1 + n2*w2;
+    
+    return result;
+}
+
 float fnoisex(float3 uv) {
-    return lerp(fnoisev4(uv), fnoisev4(uv + 1.5), 0.5);
+    //return fnoisev3(uv);
+    float n = fnoisev3(uv);
+
+    // mimic multi-octave contrast
+    n = (n - 0.5);
+    n *= 1.3;
+    n = n / (1.0 + abs(n));
+    n = n * 0.5 + 0.5;
+    
+    return sharpen(n,3);
+    //return lerp(fnoisev3(uv), fnoisev3(uv + 1.5), 0.5);
 }
 
 float3 pal4(float f, float3 c0, float3 c1, float3 c2, float3 c3) {
@@ -158,12 +190,12 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         innerWarp = tex(0, uv * 5.0 + innerFlow * float2(-0.6, 0.8)).rg - 0.5;
         //shall only warp when inner
         innerWarp *= pow(ns,5);
-        float innerWarpN = tex(0, uv * 1.0 - flow * float2(0.8, -0.9)).r;
+        float innerWarpN = fnoisex(float3(uv, uTime));//tex(0, uv * 1.0 - flow * float2(0.8, -0.9)).r;
         innerWarpN = saturate(innerWarpN*1.5 - 0.5);
         innerWarpN = lerp(0.05, 0.8, innerWarpN);
-        innerWarpN = fnoisex(float3(uv, uTime));
         innerWarp *= innerWarpN;
-        float2 innerUvw = uv + innerWarp * 0.5;
+        innerWarpN = fnoisex(float3(uv*5, uTime));
+        float2 innerUvw = uv + innerWarpN * 0.5;
         
         float n1 = vnoise(innerUvw * 2.0 * 5);
         float n2 = vnoise(-innerUvw * 3.0 * 5);
@@ -188,7 +220,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         float3 col = lerp(colOuter, colInner, pow(ns,2)) * maskMain;
         col = sharpen(col, 1.5);
         //col=colInner;
-        col=float3(innerWarpN);
+        //col=float3(innerWarpN);
         //col=float3(innerWarp,0.0);
         
         matAlbedo = col;// * maskMain;
