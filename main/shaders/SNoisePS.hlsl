@@ -87,14 +87,14 @@ float snoise(float3 v) {
 
 float snoiseL(float3 v) {
     float amplitude = 0.5;
-    float frequency = 8.0;
+    float frequency = 4.0;
     float output = 0.0;
     static const int octaves=5;
     for (int i = 0; i < octaves; i++)
     {
         output += snoise(v * frequency) * amplitude;
         amplitude *= 0.5;
-        frequency *= 2.1;
+        frequency *= 2.0;
     }
 
     return clamp(output, 0.0, 1.0);
@@ -102,7 +102,7 @@ float snoiseL(float3 v) {
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //uvs are already normalized
-    float c = snoiseL(float3(uv,uTime/10.0));
+    float c = snoiseL(float3(uv,uTime/100.0));
     return float4(c,c,c,1.0f);
 }
 

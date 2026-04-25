@@ -26,7 +26,7 @@
 			</variables>
 			<macros />
 		</pass>
-		<pass name="SNoise" type="shader" active="false" patchverts="1">
+		<pass name="SNoise" type="shader" active="true" patchverts="1">
 			<shader type="vs" path="shaders\SNoiseVS.hlsl" entry="main" />
 			<shader type="ps" path="shaders\SNoisePS.hlsl" entry="main" />
 			<inputlayout>
@@ -132,7 +132,7 @@
 			</variables>
 			<macros />
 		</pass>
-		<pass name="GenMeat3" type="shader" active="true" patchverts="1">
+		<pass name="GenMeat3" type="shader" active="false" patchverts="1">
 			<shader type="vs" path="shaders\GenMeat3VS.hlsl" entry="main" />
 			<shader type="ps" path="shaders\GenMeat3PS.hlsl" entry="main" />
 			<inputlayout>
@@ -192,9 +192,9 @@
 	<objects />
 	<cameras />
 	<settings>
-		<entry type="property" name="GenMeat3" item="pipe" />
-		<entry type="file" name="GenMeat3" shader="vs" />
-		<entry type="file" name="GenMeat3" shader="ps" />
+		<entry type="property" name="SNoise" item="pipe" />
+		<entry type="file" name="SNoise" shader="vs" />
+		<entry type="file" name="SNoise" shader="ps" />
 		<entry type="pinned" name="uLightPos" owner="GenMeat3" />
 		<entry type="camera" fp="false">
 			<distance>4</distance>
