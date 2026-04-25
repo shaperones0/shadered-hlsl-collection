@@ -78,6 +78,10 @@ float fnoisev3(float3 uv) {
     return result;
 }
 
+float lerp2(float fromA, float fromB, float toA, float toB, double value) {
+    return ((value-fromA)/(fromB-fromA))*(toB-toA)+toA;
+}
+
 float fnoisex(float3 uv) {
     //return fnoisev3(uv);
     float n = fnoisev3(uv);
@@ -105,6 +109,20 @@ float3 pal4(float f, float3 c0, float3 c1, float3 c2, float3 c3) {
 }
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
+    //normalize uv
+    {
+        float w=uResolution.x;
+        float h=uResolution.y;
+        if (w>h) {
+            //multiply height
+            uv.y = lerp2(h-w, h+w, 0, 1, uv.y * 2*h);
+        }
+        else {
+            //multiply width
+            uv.x = lerp2(w-h, w+h, 0, 1, uv.x * 2*w);
+        }
+    }
+
     float3 matAlbedo = float3(0.0);
 
     float2 flow = float2(0.05, 0.03) * uTime;
