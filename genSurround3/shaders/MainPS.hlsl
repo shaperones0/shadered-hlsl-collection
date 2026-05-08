@@ -284,8 +284,8 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //base snoise
     float ns;
     {
-        ns = tex(0, uv*0.8 + warp*0.2/20).b;
-        ns = snoisel(float3(uv.x*10,uv.y*10,uTime/10));
+        ns = tex(0, uv*0.8 + warp*1.0/20).b;
+        //ns = snoisel(float3(uv.x*10,uv.y*10,uTime/10));
         ns = 1-fold(saturate(ns),3);
 
         //make the center dark
@@ -299,8 +299,8 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         );
         float angle = sign(d2.y) * (1 - d2.x / (abs(d2.x) + abs(d2.y) + 1e-5));
         float n1;
-        //n1 = tex(0, float2(angle * 1 * 0.1, uTime * 0.002)).b;
-        n1 = snoisel(float3(angle*2, 1.0, uTime*0.2));
+        n1 = tex(0, float2(angle * 1 * 0.1, uTime * 0.002)).b;
+        //n1 = snoisel(float3(angle*2, 1.0, uTime*0.2));
         n1 = sharpen(n1+0.13,6)*2;
 
         //apply the dark center
@@ -351,10 +351,12 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     }
 
     float nr=step(0.5,ns);
+    float c = hash(uvo+uTime)*nr;
     //stylization 2
     {
         nr=round(hash(round(uvo*uResolution/3)/uResolution+uTime)*nr);
     }
+    return float4(c,c,c,nr);
     return float4(nr,nr,nr,1.0f);
     return float4(matAlbedo,1.0f);
 }

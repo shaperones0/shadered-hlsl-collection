@@ -32,7 +32,11 @@
 			<macros />
 		</pass>
 	</pipeline>
-	<objects />
+	<objects>
+		<object type="texture" path="textures\noisekit.png" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat">
+			<bind slot="0" name="Main" />
+		</object>
+	</objects>
 	<cameras />
 	<settings>
 		<entry type="property" name="Main" item="pipe" />
