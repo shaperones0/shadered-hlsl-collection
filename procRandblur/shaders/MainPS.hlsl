@@ -54,7 +54,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //distort
     float2 uvo=randoff_circle(float3(uv*100,uTime*109), uDistort);
     
-    float wave=sin(uv.y*50)*uWave;
+    float wave=sin(uv.y*50+uTime)*uWave;
     wave*=0.5-abs(uv.x-0.5);
     uvo.x+=wave;
     
@@ -68,5 +68,5 @@ float4 blend_normal(float4 src, float4 dest, float srcA) { return srcA * src + (
 
 float4 main(float4 uv : SV_POSITION) : SV_TARGET {    
     float4 c=mainC(uv.xy / uResolution);
-    return blend_normal(c,float4(0,0,0,1),c.a);
+    return blend_normal(c,float4(0,uv.xy/uResolution/5,1),c.a);
 }
