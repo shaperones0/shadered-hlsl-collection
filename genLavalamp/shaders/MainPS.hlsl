@@ -90,13 +90,122 @@ float snoise(float3 v) {
     return (42.0 * dot(m, px)+1)*0.5;
 }
 
+
+#define RANDOM_SCALE float4(443.897, 441.423, 0.0973, 0.1099)
+float2 hash2(float p) {
+    float3 p3 = frac(float3(p, p, p) * RANDOM_SCALE.xyz);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return frac((p3.xx + p3.yz) * p3.zy);
+}
+
+float sharpen(float x, float power) {
+    x = saturate(x);
+    return pow(x, power) / (pow(x, power) + pow(1 - x, power));
+}
+
+float hashSmooth(float3 uv) {
+    float z = uv.z;
+    float iz = floor(z);
+    float f = frac(z);
+    f = sharpen(f, 1.2);
+
+    // 3-tap weights
+    float w0 = 0.5 * (1.0 - f) * (1.0 - f);
+    float w1 = 0.75 - (f - 0.5)*(f - 0.5);
+    float w2 = 0.5 * f * f;
+
+    float2 base = uv.xy;
+
+    float n0 = hash(base + hash2(iz - 1)).r;
+    float n1 = hash(base + hash2(iz)).r;
+    float n2 = hash(base + hash2(iz + 1)).r;
+
+    float result = n0*w0 + n1*w1 + n2*w2;
+
+    return result;
+}
+
+float lerp2(float fromA, float fromB, float toA, float toB, float value) {
+    return ((value-fromA)/(fromB-fromA))*(toB-toA)+toA;
+}
+
+float2 swirl(float2 uv, float2 center, float radius) {
+    float2 tc = uv;
+    tc -= center;
+    float dist = length(tc);
+    float swirliness=-0.4;
+    float radius_scaled = radius;
+    if (dist < radius_scaled) {
+        float percent = (radius_scaled - dist) / radius_scaled;
+        float theta = percent * percent * swirliness * 8.0;
+        float s = sin(theta);
+        float c = cos(theta);
+        tc = float2(dot(tc, float2(c, -s)), dot(tc, float2(s, c)));
+    }
+    return tc+center;
+}
+
+float filmGrain(float2 uv, float time)
+{
+    float2 p = floor(uv * 320.0);
+
+    float phase = time * 3.0;
+
+    float f0 = floor(phase);
+    float f1 = f0 + 1.0;
+
+    float t = frac(phase);
+    t = t * t * (3.0 - 2.0 * t);
+
+    float a = hash(p + f0 * 19.19);
+    float b = hash(p + f1 * 19.19);
+
+    return lerp(a, b, t);
+}
+
+float vnoise(float2 p) {
+    float2 i = floor(p);
+    float2 f = frac(p);
+
+    float a = hash(i);
+    float b = hash(i + float2(1, 0));
+    float c = hash(i + float2(0, 1));
+    float d = hash(i + float2(1, 1));
+
+    float2 u = f * f * (3.0 - 2.0 * f);
+
+    return lerp(lerp(a,b,u.x), lerp(c,d,u.x), u.y);
+}
+
+
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     //uvs are already normalized
+    
+    //normalize uv
+    {
+        float w=uResolution.x;
+        float h=uResolution.y;
+        if (w>h) {
+            //multiply height
+            uv.y = lerp2(h-w, h+w, 0, 1, uv.y * 2*h);
+        }
+        else {
+            //multiply width
+            uv.x = lerp2(w-h, w+h, 0, 1, uv.x * 2*w);
+        }
+    }
+    float2 uvo=uv;
+
+    //swirl
+    uv = swirl(uv, float2(0.5,0.5), 0.7);
+    
     float v;
     v = snoise(float3(uv*5+100,uTime));
     v = smoothstep(0.3,1.0,v);
     v = lerp(0.1,1.0,v);
-    v *= hash(uv*100+uTime*100);
+    //v *= hashSmooth(float3(uvo*100,uTime*5));
+    v *= hash(uvo*100);
+    //v *= vnoise(uvo*100+uTime);
     return float4(v,v,v,1.0f);
 }
 

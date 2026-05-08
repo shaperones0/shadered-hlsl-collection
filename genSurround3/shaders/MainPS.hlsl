@@ -351,7 +351,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     }
 
     float nr=step(0.5,ns);
-    float c = hash(uvo+uTime)*nr;
+    float c = hash(uvo)*nr;
     //stylization 2
     {
         nr=round(hash(round(uvo*uResolution/3)/uResolution+uTime)*nr);
