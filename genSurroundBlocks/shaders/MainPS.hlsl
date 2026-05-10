@@ -156,6 +156,36 @@ float fnoisex(float3 uv) {
     //return lerp(fnoisev3(uv), fnoisev3(uv + 1.5), 0.5);
 }
 
+float hash(float2 p) {
+    p = frac(p * 0.3183099 + float2(0.71, 0.113));
+    p *= 17.0;
+    return frac(p.x * p.y * (p.x + p.y));
+}
+
+
+float fnoisev4(float2 uv, float time) {
+    float z = time;
+    float iz = floor(z);
+    float f = frac(z);
+    f = sharpen(f, 1.2);
+
+    // 3-tap weights
+    float w0 = 0.5 * (1.0 - f) * (1.0 - f);
+    float w1 = 0.75 - (f - 0.5)*(f - 0.5);
+    float w2 = 0.5 * f * f;
+
+    float2 base = uv;
+
+    float n0 = hash(base + hash2(iz - 1)).r;
+    float n1 = hash(base + hash2(iz)).r;
+    float n2 = hash(base + hash2(iz + 1)).r;
+
+    float result = n0*w0 + n1*w1 + n2*w2;
+
+    return result;
+}
+
+
 float fold(float val, int n) {
     return 1 - abs(1 - 2*frac(val * n));
 }
@@ -179,7 +209,7 @@ float nsSurround(float2 uv) {
     float2 warp = tex(1, uv*2.0 + flow).rg - 0.5;
     
     float ns;
-    ns = tex(1, uv*0.3 + warp*0.2/20).b;
+    ns = tex(1, uv*0.15 + warp*0.2/20).b;
     ns = 1-fold(saturate(ns),3);
 
     //make the center dark
@@ -194,7 +224,7 @@ float nsSurround(float2 uv) {
     );
     float angle = sign(d2.y) * (1 - d2.x / (abs(d2.x) + abs(d2.y) + 1e-5));
     float n1;
-    n1 = tex(0, float2(angle * 1 * 0.1, uTime * 0.002)).b;
+    n1 = tex(1, float2(angle * 1 * 0.1, uTime * 0.02)).b;
     n1 = sharpen(n1+0.13,6);
 
     //apply the dark center
@@ -211,19 +241,22 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     BlockInfo b = getBlockInfo(uv*uResolution);
 
     float2 buv = b.blockUV;
+    float2 bo = b.blockOrigin / uResolution;
+    
+    //texture
+    float nsTex = fnoisev4(bo, uTime);
+    float3 color;
+    color = float3(buv,1.0);
+    float2 texuv = buv;
+    texuv.x = texuv.x/5 + floor(nsTex*5)/5;
+    color = tex(2, texuv);
+    
+    //whitenoise
+    float n = fnoisev4(uv*1007,uTime*3);
+    color += (2*n-1)*0.3;
 
-    float3 color=float3(buv,1.0);
-
-    //outline
-    float edge =
-        step(0.04, buv.x) *
-        step(0.04, buv.y) *
-        step(buv.x, 0.96) *
-        step(buv.y, 0.96);
-
-    color *= edge;
-    float surround = nsSurround(b.blockOrigin / uResolution);
-    color *= step(0.1, surround);
+    float surround = nsSurround(bo);
+    color *= step(0.2, surround);
     //color = surround;
     //color = nsSurround(uv);
     
