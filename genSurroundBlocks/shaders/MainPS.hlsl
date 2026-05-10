@@ -28,6 +28,7 @@ float4 tex(const int i, float2 uv) {
     }
 }
 
+
 // maf
 
 //bring value away from 0.5 and closer to 0 and 1
@@ -100,10 +101,10 @@ float nsSurround(float2 uv) {
             uv.x = lerp2(w-h, w+h, 0, 1, uv.x * 2*w);
         }
     }
-    
+
     float2 flow = float2(0.05, 0.03) * uTime;
     float2 warp = tex(1, uv*2.0 + flow).rg - 0.5;
-    
+
     float ns;
     ns = tex(1, uv*0.15 + warp*0.2/20).b;
     ns = 1-fold(saturate(ns),3);
@@ -145,13 +146,13 @@ bool isLargeAnchor(int2 cell) {
 }
 
 struct BlockInfo {
-    float2 blockUV;      
-    
+    float2 blockUV;
+
     //pixel-space origin
-    float2 blockOrigin;  
-    
+    float2 blockOrigin;
+
     //16 or 32
-    float  blockSize;    
+    float  blockSize;
 };
 
 BlockInfo getBlockInfo(float2 fragCoord) {
@@ -167,6 +168,7 @@ BlockInfo getBlockInfo(float2 fragCoord) {
     bool foundLarge = false;
     int2 largeAnchor = cell;
 
+    [unroll]
     for (int i = 0; i < 4; i++) {
         int2 a = candidates[i];
 
@@ -210,21 +212,21 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
 
     float2 buv = b.blockUV;
     float2 bo = b.blockOrigin / uResolution;
-    
+
     float surround = nsSurround(bo);
-    if (surround<0.2) discard;
-    
+    // if (surround<0.2) discard;
+
     float3 color;
-    
+
     //texture
     color = tex(2, float2(
         buv.x/5 + floor(hashSmooth(bo, uTime)*5)/5,
         buv.y
-    ));
-    
+    )).rgb;
+
     //whitenoise
     color += (2 * hashSmooth(uv*1007,uTime*3) - 1)*0.3;
-    
+
     //outline
     float edge =
         smoothstep(0,0.05, buv.x) *
@@ -234,11 +236,12 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     color *= lerp2(0,1,0.5,1,edge);
 
     //float surround = nsSurround(bo);
-    //color *= step(0.2, surround);
+    float vis = step(0.2, surround);
+    color *= vis;
     //color = surround;
     //color = nsSurround(uv);
-    
-    return float4(color, 1.0);
+
+    return float4(color, vis);
 }
 
 float4 main(float4 uv : SV_POSITION) : SV_TARGET {

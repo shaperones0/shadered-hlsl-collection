@@ -80,9 +80,11 @@
 	</objects>
 	<cameras />
 	<settings>
-		<entry type="property" name="Cells" item="pipe" />
+		<entry type="property" name="Main" item="pipe" />
 		<entry type="file" name="Cells" shader="vs" />
 		<entry type="file" name="Cells" shader="ps" />
+		<entry type="file" name="Main" shader="vs" />
+		<entry type="file" name="Main" shader="ps" />
 		<entry type="pinned" name="uR" owner="Cells" />
 		<entry type="pinned" name="uP" owner="Main" />
 		<entry type="camera" fp="false">
