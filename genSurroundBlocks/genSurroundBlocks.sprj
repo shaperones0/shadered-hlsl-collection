@@ -58,6 +58,11 @@
 						<value>0.400000006</value>
 					</row>
 				</variable>
+				<variable type="float" name="uP">
+					<row>
+						<value>2.16000009</value>
+					</row>
+				</variable>
 			</variables>
 			<macros />
 		</pass>
@@ -66,15 +71,20 @@
 		<object type="rendertexture" name="texDots" format="R8" rsize="0.062500,0.062500" clear="true">
 			<bind slot="0" name="Main" />
 		</object>
+		<object type="texture" path="textures\blocks.png" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat">
+			<bind slot="2" name="Main" />
+		</object>
+		<object type="texture" path="textures\noisekit.png" vflip="false" min_filter="Linear" mag_filter="Linear" wrap_s="Repeat" wrap_t="Repeat">
+			<bind slot="1" name="Main" />
+		</object>
 	</objects>
 	<cameras />
 	<settings>
-		<entry type="property" name="texDots" item="rt" />
-		<entry type="file" name="Main" shader="vs" />
+		<entry type="property" name="C:\dev\workbench\shadered-hlsl-collection\genSurroundBlocks\textures\noisekit.png" item="image3D" />
 		<entry type="file" name="Main" shader="ps" />
-		<entry type="file" name="Cells" shader="vs" />
 		<entry type="file" name="Cells" shader="ps" />
 		<entry type="pinned" name="uThreshold" owner="Main" />
+		<entry type="pinned" name="uP" owner="Main" />
 		<entry type="camera" fp="false">
 			<distance>4</distance>
 			<pitch>28</pitch>

@@ -5,11 +5,26 @@ cbuffer vars : register(b0) {
 
 Texture2D texDots : register(t0);
 SamplerState smpDots : register(s0);
+
+Texture2D texNoise : register(t1);
+SamplerState smpNoise : register(s1);
+
+Texture2D texBlocks : register(t2);
+SamplerState smpBlocks : register(s2);
+
+
 float uThreshold;
+float uP;
 
 float4 tex(const int i, float2 uv) {
     if (i==0) {
         return texDots.Sample(smpDots,uv);
+    }
+    else if (i==1) {
+        return texNoise.Sample(smpNoise,uv);
+    }
+    else if (i==2) {
+        return texBlocks.Sample(smpBlocks,uv);
     }
 }
 
@@ -89,9 +104,110 @@ BlockInfo getBlockInfo(float2 fragCoord) {
     return o;
 }
 
+float sharpen(float x, float power) {
+    x = saturate(x);
+    return pow(x, power) / (pow(x, power) + pow(1 - x, power));
+}
+
+#define RANDOM_SCALE float4(443.897, 441.423, 0.0973, 0.1099)
+float2 hash2(float p) {
+    float3 p3 = frac(float3(p, p, p) * RANDOM_SCALE.xyz);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return frac((p3.xx + p3.yz) * p3.zy);
+}
+
+float lerp2(float fromA, float fromB, float toA, float toB, float value) {
+    return ((value-fromA)/(fromB-fromA))*(toB-toA)+toA;
+}
+
+float fnoisev3(float3 uv) {
+    float z = uv.z;
+    float iz = floor(z);
+    float f = frac(z);
+    f = sharpen(f, 1.2);
+
+    // 3-tap weights
+    float w0 = 0.5 * (1.0 - f) * (1.0 - f);
+    float w1 = 0.75 - (f - 0.5)*(f - 0.5);
+    float w2 = 0.5 * f * f;
+
+    float2 base = uv.xy;
+
+    float n0 = tex(1, base + hash2(iz - 1)).r;
+    float n1 = tex(1, base + hash2(iz)).r;
+    float n2 = tex(1, base + hash2(iz + 1)).r;
+
+    float result = n0*w0 + n1*w1 + n2*w2;
+
+    return result;
+}
+
+float fnoisex(float3 uv) {
+    //return fnoisev3(uv);
+    float n = fnoisev3(uv);
+
+    // mimic multi-octave contrast
+    n = (n - 0.5);
+    n *= 1.3;
+    n = n / (1.0 + abs(n));
+    n = n * 0.5 + 0.5;
+
+    return sharpen(n,3);
+    //return lerp(fnoisev3(uv), fnoisev3(uv + 1.5), 0.5);
+}
+
+float fold(float val, int n) {
+    return 1 - abs(1 - 2*frac(val * n));
+}
+
+float nsSurround(float2 uv) {
+    //square uv
+    {
+        float w=uResolution.x;
+        float h=uResolution.y;
+        if (w>h) {
+            //multiply height
+            uv.y = lerp2(h-w, h+w, 0, 1, uv.y * 2*h);
+        }
+        else {
+            //multiply width
+            uv.x = lerp2(w-h, w+h, 0, 1, uv.x * 2*w);
+        }
+    }
+    
+    float2 flow = float2(0.05, 0.03) * uTime;
+    float2 warp = tex(1, uv*2.0 + flow).rg - 0.5;
+    
+    float ns;
+    ns = tex(1, uv*0.3 + warp*0.2/20).b;
+    ns = 1-fold(saturate(ns),3);
+
+    //make the center dark
+    float2 d = uv - 0.5f;
+    float dist = length(d);
+    dist=pow(dist,1.5);
+
+    //1d radial noise to jostle the border
+    float2 d2 = float2(
+        d.x * 0.707 - d.y * 0.707,
+        d.x * 0.707 + d.y * 0.707
+    );
+    float angle = sign(d2.y) * (1 - d2.x / (abs(d2.x) + abs(d2.y) + 1e-5));
+    float n1;
+    n1 = tex(0, float2(angle * 1 * 0.1, uTime * 0.002)).b;
+    n1 = sharpen(n1+0.13,6);
+
+    //apply the dark center
+    float dark = (1.0 - dist * uP * (n1 * lerp(0,0.2,saturate(uP-1)) + 1));
+    ns=saturate(ns-dark);
+
+    return ns;
+    //make uniformly darker spots
+    ns=smoothstep(0.5,1,ns);
+    //ns=round(ns);
+}
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
-
     BlockInfo b = getBlockInfo(uv*uResolution);
 
     float2 buv = b.blockUV;
@@ -106,8 +222,11 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         step(buv.y, 0.96);
 
     color *= edge;
-
-
+    float surround = nsSurround(b.blockOrigin / uResolution);
+    color *= step(0.1, surround);
+    //color = surround;
+    //color = nsSurround(uv);
+    
     return float4(color, 1.0);
 }
 
