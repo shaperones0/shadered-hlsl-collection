@@ -23,6 +23,11 @@
 			<variables>
 				<variable type="float2" name="uResolution" system="ViewportSize" />
 				<variable type="float" name="uTime" system="Time" />
+				<variable type="float" name="uR">
+					<row>
+						<value>0.419999987</value>
+					</row>
+				</variable>
 			</variables>
 			<macros />
 		</pass>
@@ -55,7 +60,7 @@
 				</variable>
 				<variable type="float" name="uP">
 					<row>
-						<value>2.30999994</value>
+						<value>2.3499999</value>
 					</row>
 				</variable>
 			</variables>
@@ -75,9 +80,10 @@
 	</objects>
 	<cameras />
 	<settings>
-		<entry type="property" name="C:\dev\workbench\shadered-hlsl-collection\genSurroundBlocks\textures\noisekit.png" item="image3D" />
-		<entry type="file" name="Main" shader="ps" />
+		<entry type="property" name="Cells" item="pipe" />
+		<entry type="file" name="Cells" shader="vs" />
 		<entry type="file" name="Cells" shader="ps" />
+		<entry type="pinned" name="uR" owner="Cells" />
 		<entry type="pinned" name="uP" owner="Main" />
 		<entry type="camera" fp="false">
 			<distance>4</distance>

@@ -3,7 +3,8 @@ cbuffer vars : register(b0) {
     float uTime;
 };
 
-static const float uThreshold = 0.4;
+static const float uThreshold = 0.7;
+float uR;
 
 // maf
 
@@ -56,6 +57,7 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     // Current 16x16 cell
     //int2 cell = (int2)floor(uvr / 16.0);
     int2 cell = (int2)uvr;
+    float hshCell = hashSmooth(cell, uTime/10);
     
     int2 candidates[9];
     candidates[0] = cell + int2(-1, -1);
@@ -74,9 +76,16 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     float mxHsh = -10;
     
     for (int i = 0; i < 9; i++) {
+        float hsh;
         int2 cur = candidates[i];
         cur = fmod(cur, uResolution);    //prevent when wrapped
-        float hsh = hashSmooth(cur, uTime/10);
+        if (i==4) {
+            hsh = hshCell;
+        } 
+        else {
+            hsh = hashSmooth(cur, uTime/10);
+        }
+        
         if (hsh > mxHsh) {
             mxHsh=hsh;
             mxCell=cur;
@@ -86,6 +95,10 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     float2 c2 = abs(mxCell-cell);
     
     float c = (cell.x==mxCell.x && cell.y==mxCell.y) ? 1.0 : 0.0;
+    
+    //chance to disappear
+    float dist=length(cell/uResolution - float2(0.5));
+    c*=step(uR,pow(dist,0.5)*hshCell);
     return float4(c,c,c,1.0f);
 }
 
