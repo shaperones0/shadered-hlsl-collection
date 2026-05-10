@@ -3,26 +3,21 @@ cbuffer vars : register(b0) {
     float uTime;
 };
 
-//Texture2D tex : register(t0);
-//SamplerState smp : register(s0);
+static const float uThreshold = 0.4;
 
-float uThreshold; // ~0.15 gives roughly ~40% large area coverage
+// maf
+
+float sharpen(float x, float power) {
+    x = saturate(x);
+    return pow(x, power) / (pow(x, power) + pow(1 - x, power));
+}
+
+// hash
 
 float hash(float2 p) {
     p = frac(p * 0.3183099 + float2(0.71, 0.113));
     p *= 17.0;
     return frac(p.x * p.y * (p.x + p.y));
-}
-
-float hash21(float2 p) {
-    p = frac(p * float2(123.34, 345.45));
-    p += dot(p, p + 34.345);
-    return frac(p.x * p.y);
-}
-
-float sharpen(float x, float power) {
-    x = saturate(x);
-    return pow(x, power) / (pow(x, power) + pow(1 - x, power));
 }
 
 #define RANDOM_SCALE float4(443.897, 441.423, 0.0973, 0.1099)
@@ -32,7 +27,7 @@ float2 hash2(float p) {
     return frac((p3.xx + p3.yz) * p3.zy);
 }
 
-float fnoisev3(float2 uv, float time) {
+float hashSmooth(float2 uv, float time) {
     float z = time;
     float iz = floor(z);
     float f = frac(z);
@@ -52,10 +47,6 @@ float fnoisev3(float2 uv, float time) {
     float result = n0*w0 + n1*w1 + n2*w2;
 
     return result;
-}
-
-float cellValue(int2 cell, float time) {
-    return fnoisev3(cell, time/10);
 }
 
 float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
@@ -84,8 +75,8 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     
     for (int i = 0; i < 9; i++) {
         int2 cur = candidates[i];
-        cur = fmod(cur, uResolution);
-        float hsh = cellValue(cur, uTime);
+        cur = fmod(cur, uResolution);    //prevent when wrapped
+        float hsh = hashSmooth(cur, uTime/10);
         if (hsh > mxHsh) {
             mxHsh=hsh;
             mxCell=cur;
@@ -95,8 +86,6 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     float2 c2 = abs(mxCell-cell);
     
     float c = (cell.x==mxCell.x && cell.y==mxCell.y) ? 1.0 : 0.0;
-    //c = hash21(cell);
-    //return float4(c2,0.0f,1.0f);
     return float4(c,c,c,1.0f);
 }
 
