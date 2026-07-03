@@ -13,7 +13,7 @@ float4 tex(const int i, float2 uv) {
     if (i == 0) {
         return texBg.Sample(smpBg,uv);
     }
-} 
+}
 
 float hash(float2 p) {
     p = frac(p * 0.3183099 + float2(0.71, 0.113)) * 17.0;
@@ -51,17 +51,17 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         //randblur circle
         float2 hw = float2(hashSmooth(uvs * 1001.0, uTime), hashSmooth(uvs * 993.0, uTime) * 6.2831853);
         float2 centeredUV = uvs - 0.5 + sqrt(hw.x) * float2(cos(hw.y), sin(hw.y)) * 0.05;
-        
+
         //spinning spiral tihngie
         float dist = length(centeredUV);
         float distortedDist = dist + sin((atan2(centeredUV.y, centeredUV.x) + dist * 5.0 - uTime * 0.5) * 8.0) * 0.15 * dist;
-    
+
         float outerEdge = (1.0 - uSpotlight) * 1.5 - 0.2;
         c.rgb *= 1.0 - smoothstep(outerEdge - 0.4, outerEdge, distortedDist);
     }
-    
+
     //palette
-    float luma = pow(abs(dot(c.rgb, float3(0.299, 0.587, 0.114))), 1.2); 
+    float luma = pow(abs(dot(c.rgb, float3(0.299, 0.587, 0.114))), 1.2);
     float3 palColor = lerp(float3(0.0, 0.0, 0.0), float3(24.0, 24.0, 24.0) / 255.0, step(0.05, luma));
     palColor = lerp(palColor, float3(58.0, 58.0, 58.0) / 255.0, step(0.15, luma));
     palColor = lerp(palColor, float3(99.0, 99.0, 99.0) / 255.0, step(0.45, luma));

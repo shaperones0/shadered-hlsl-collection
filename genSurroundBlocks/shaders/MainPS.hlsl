@@ -233,7 +233,9 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
         smoothstep(0,0.05, buv.y) *
         smoothstep(buv.x, 0.95,1) *
         smoothstep(buv.y, 0.95,1);
-    color *= lerp2(0,1,0.5,1,edge);
+    color = lerp(float3(0.3,0.3,0.3), color, edge);
+    color *= 0.5;
+    //color *= lerp2(0,1,0.5,1,edge);
 
     //float surround = nsSurround(bo);
     float vis = step(0.2, surround);

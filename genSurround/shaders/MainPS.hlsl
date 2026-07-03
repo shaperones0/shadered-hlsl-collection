@@ -126,12 +126,12 @@ float4 mainC(float2 uv : SV_POSITION) : SV_TARGET {
     float3 matAlbedo = float3(0.0);
 
     float2 flow = float2(0.05, 0.03) * uTime;
-    float2 warp = tex(0, uv*2.0 + flow).rg - 0.5;
+    float2 warp = tex(0, uv*0.1 + flow).rg - 0.5;
 
     //base snoise
     float ns;
     {
-        ns = tex(0, uv*0.8 + warp*0.2/20).b;
+        ns = tex(0, uv*0.8 + warp*1.2/20).b;
         ns = 1-fold(saturate(ns),3);
 
         //make the center dark
